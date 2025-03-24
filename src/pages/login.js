@@ -3,7 +3,7 @@ import { auth, db } from "../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import './App.css';
+import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css"
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -21,15 +21,16 @@ const Login = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Fetch user role from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
         if (userData.role === "patient") {
-          navigate("/prescription"); // Redirect patient to Prescription Form
+          navigate("/patinetHome"); 
+        }else if (userData.role === "pharmacist") {
+          navigate("/patinetHome"); 
         } else {
-          navigate("/"); // Redirect others to Home
+          navigate("/"); 
         }
       } else {
         setError("User role not found. Please contact support.");

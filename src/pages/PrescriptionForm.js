@@ -3,7 +3,7 @@ import { auth, db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import "./App.css";
+import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css"
 
 const PrescriptionForm = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +20,6 @@ const PrescriptionForm = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
 
-  const navigate = useNavigate(); 
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -66,26 +65,11 @@ const PrescriptionForm = () => {
     setSubmitted(false);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      navigate("/login"); 
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+
 
   return (
     <div className="prescription-container" style={{ backgroundImage: "url('/images/Doctor.jpg')" }}>
-      <div className="header-login-signup" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "10px", width: "100%", backgroundColor: "#0082b5", padding: "15px" }}>
-        <div className="horizantal" style={{ display: "flex", alignItems: "center" }}>
-          <img src="/images/Logo.png" alt="Logo" style={{ width: "150px", height: "auto", marginRight: "10px" }} />
-          <h1 style={{ fontFamily: "serif", fontSize: "55px", fontWeight: "bold", margin: 0 }}>THE KIDZ KLINIK</h1>
-        </div>
-
-        <button onClick={handleSignOut} className="signout-button">Sign Out</button>
-      </div>
-
+  
       {!submitted ? (
         <div className="form-container">
           <h1 className="clinic-title">THE KIDZ KLINIK</h1>
@@ -134,7 +118,7 @@ const PrescriptionForm = () => {
             <div className="form-group signature-container">
               <label>Signature:</label>
               <div className="signature-box">
-                <input type="text" name="signature" placeholder="Sign here..." value={formData.signature} onChange={handleChange} required />
+                <input type="text" name="signature" placeholder="Sign here..." value={formData.signature} onChange={handleChange} required style={{border:"none"}} />
               </div>
             </div>
 

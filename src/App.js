@@ -7,7 +7,8 @@ import Signup from "./pages/signup";
 import Login from "./pages/login";
 import Home from "./pages/home";
 import PrescriptionForm from "./pages/PrescriptionForm";
-
+import Patienthome from "./pages/patienthome";
+import Pharmacist from "./pages/pharmacist";
 function App() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
@@ -34,19 +35,23 @@ function App() {
   return (
     <Router>
       <Routes>
-        {user ? (
+      {user ? (
           role === "patient" ? (
-            <Route path="/" element={<Navigate to="/prescription" />} /> 
+            <Route path="/" element={<Navigate to="/patientHome" />} />
+          ) : role === "pharmacist" ? (
+            <Route path="/" element={<Navigate to="/pharmacist" />} />
           ) : (
-            <Route path="/" element={<Home />} /> 
+            <Route path="/" element={<Home />} />
           )
         ) : (
           <Route path="/" element={<Navigate to="/login" />} />
         )}
 
+        <Route path="patinetHome" element={<Patienthome/>}/>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/prescription" element={<PrescriptionForm />} /> 
+        <Route path="/prescription" element={<PrescriptionForm />} />
+        <Route path = "/pharmacist" element={<Pharmacist/>}/> 
       </Routes>
     </Router>
   );
