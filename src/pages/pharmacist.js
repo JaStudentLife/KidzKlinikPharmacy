@@ -235,7 +235,7 @@ const PreparePrescription = ({ setActiveTab }) => {
               fontWeight: 'bold'
             }}
           >
-            ✅ Finish Packaging
+            Finish Packaging
           </button>
         </div>
       )}
