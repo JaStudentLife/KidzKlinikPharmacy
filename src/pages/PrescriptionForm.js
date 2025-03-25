@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css";
+import "./App.css";
 import emailjs from '@emailjs/browser';
 const PrescriptionForm = () => {
   const [formData, setFormData] = useState({

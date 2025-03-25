@@ -2,7 +2,7 @@ import React from "react";
 import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css"
+import "./App.css";
 
 const Home = () => {
   const navigate = useNavigate();

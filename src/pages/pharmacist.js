@@ -3,7 +3,7 @@ import { auth, db } from "../firebase";
 import { doc, setDoc,getDocs,collection,updateDoc,collectionGroup } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css"
+import "./App.css";
 import PrescriptionForm from "./PrescriptionForm";
 import AddMedication from "./addmedication";
 import InventoryDashboard from "./InventoryDashboard";

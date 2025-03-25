@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css"
+import "./App.css";
 const AddMedication = () => {
   const navigate = useNavigate();
   const [medication, setMedication] = useState({

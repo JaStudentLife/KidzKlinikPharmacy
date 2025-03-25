@@ -4,7 +4,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css"
+import "./App.css";
 
 const Signup = () => {
   const [email, setEmail] = useState("");

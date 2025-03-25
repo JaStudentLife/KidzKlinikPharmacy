@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
+import "./App.css";
 
 const VerifyPrescription = () => {
   const [patientId, setPatientId] = useState("");

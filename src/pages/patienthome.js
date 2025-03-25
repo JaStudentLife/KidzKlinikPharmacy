@@ -3,7 +3,7 @@ import { auth, db } from "../firebase";
 import { doc, setDoc, collection, getDocs, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import "/Users/shavarmorgan/kidz-klinik-pharmacy/src/pages/App.css"
+import "./App.css";
 import PrescriptionForm from "./PrescriptionForm";
 import { useEffect } from "react";
 import emailjs from '@emailjs/browser';
