@@ -143,4 +143,5 @@ const ManageInventory = () => {
   );
 };
 
+
 export default ManageInventory;

@@ -19,16 +19,19 @@ function App() {
       setUser(currentUser);
 
       if (currentUser) {
+        console.log(currentUser.uid)
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
+          console.log("data = "+userDoc.data().role)
           setRole(userDoc.data().role);
+          console.log("role = "+role)
         }
       }
       setLoading(false);
     });
 
     return () => unsubscribe(); 
-  }, []);
+  }, [role]);
 
   if (loading) return <p>Loading...</p>;
 
@@ -47,7 +50,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" />} />
         )}
 
-        <Route path="patinetHome" element={<Patienthome/>}/>
+        <Route path="/patinetHome" element={<Patienthome/>}/>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/prescription" element={<PrescriptionForm />} />

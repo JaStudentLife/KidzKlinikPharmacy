@@ -6,14 +6,12 @@ const AddMedication = () => {
   const [medication, setMedication] = useState({
     name: "",
     quantity: 0,
-    threshold: 10, // Default low stock threshold
+    threshold: 10, 
   });
 
   const handleAddMedication = (e) => {
     e.preventDefault();
-    // Here you would typically make an API call to add the medication to the database
     console.log("Medication Added:", medication);
-    // Redirect back to the Manage Inventory page
     navigate("/manage-inventory");
   };
 
