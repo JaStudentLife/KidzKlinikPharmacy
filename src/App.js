@@ -50,7 +50,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" />} />
         )}
 
-        <Route path="/patinetHome" element={<Patienthome/>}/>
+        <Route path="/patientHome" element={<Patienthome/>}/>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/prescription" element={<PrescriptionForm />} />

@@ -12,6 +12,7 @@ const InventoryDashboard = () => {
     dosage: "",
     quantity: 0,
     threshold: 10,
+    price: 0, 
   });
   const [editMedication, setEditMedication] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -24,7 +25,7 @@ const InventoryDashboard = () => {
       const newEntry = { id: docRef.id, ...newMedication };
       setInventory([...inventory, newEntry]);
 
-      setNewMedication({ name: "", dosage: "", quantity: 0, threshold: 10 });
+      setNewMedication({ name: "", dosage: "", quantity: 0, threshold: 10, price: 0 });
       setShowModal(false);
       console.log("Medication added with ID:", docRef.id);
     } catch (error) {
@@ -55,12 +56,13 @@ const InventoryDashboard = () => {
     try {
       const docRef = doc(db, "inventory", editMedication.id);
       await updateDoc(docRef, {
-        quantity: editMedication.quantity
+        quantity: editMedication.quantity,
+        price: editMedication.price  
       });
 
       const updated = inventory.map((item) =>
         item.id === editMedication.id
-          ? { ...item, quantity: editMedication.quantity }
+          ? { ...item, quantity: editMedication.quantity, price: editMedication.price }
           : item
       );
 
@@ -147,6 +149,23 @@ const InventoryDashboard = () => {
                     setNewMedication({
                       ...newMedication,
                       threshold: parseInt(e.target.value),
+                    })
+                  }
+                  required
+                />
+              </div>
+              {/* New Price Input */}
+              <div className="form-group">
+                <label>Price per Unit ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter price"
+                  value={newMedication.price}
+                  onChange={(e) =>
+                    setNewMedication({
+                      ...newMedication,
+                      price: parseFloat(e.target.value),
                     })
                   }
                   required
@@ -248,8 +267,10 @@ const InventoryDashboard = () => {
                 <th>Medication</th>
                 <th>Dosage</th>
                 <th>Quantity</th>
+                <th>Price</th>
                 <th>Threshold</th>
                 <th>Status</th>
+                <th>Total Value</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -274,6 +295,23 @@ const InventoryDashboard = () => {
                       item.quantity
                     )}
                   </td>
+                  <td>
+                    {editMedication?.id === item.id ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editMedication.price}
+                        onChange={(e) =>
+                          setEditMedication({
+                            ...editMedication,
+                            price: parseFloat(e.target.value),
+                          })
+                        }
+                      />
+                    ) : (
+                      `$${item.price.toFixed(2)}`
+                    )}
+                  </td>
                   <td>{item.threshold}</td>
                   <td>
                     <span
@@ -283,6 +321,9 @@ const InventoryDashboard = () => {
                     >
                       {item.quantity <= item.threshold ? "Low Stock" : "In Stock"}
                     </span>
+                  </td>
+                  <td>
+                    ${(item.quantity * item.price).toFixed(2)}
                   </td>
                   <td>
                     {editMedication?.id === item.id ? (

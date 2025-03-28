@@ -26,9 +26,9 @@ const Login = () => {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         if (userData.role === "patient") {
-          navigate("/patinetHome"); 
+          navigate("/patientHome"); 
         }else if (userData.role === "pharmacist") {
-          navigate("/patinetHome"); 
+          navigate("/pharmacist"); 
         } else {
           navigate("/"); 
         }

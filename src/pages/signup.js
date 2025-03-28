@@ -71,12 +71,7 @@ const Signup = () => {
           <label>Password:</label>
           <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required className="form-input" />
 
-          <label>Role:</label>
-          <select value={role} onChange={(e) => setRole(e.target.value)} className="form-input">
-            <option value="patient">Patient</option>
-            <option value="pharmacist">Pharmacist</option>
-            <option value="distributor">Distributor</option>
-          </select>
+          
 
           <button type="submit" className="signup-button">SIGN UP</button>
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { use, useState } from "react";
 import { auth, db } from "../firebase"; 
 import { doc, setDoc, collection, getDocs, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -64,8 +64,62 @@ const PatientHome = () => {
         paid: pres.paid || false,
         docRef: pres.docRef,
       }));
-  
+     
     setOrders(mapped);
+  }, [notifiedPrescriptions]);
+ 
+  useEffect(() => {
+    const fetchMedicationPrices = async () => {
+      const mappedOrders = await Promise.all(
+        notifiedPrescriptions
+          .filter(pres => pres.pickupDate && pres.pickupTime)
+          .map(async pres => {
+            // Fetch prices for each medication in the prescription
+            const medicationsWithPrices = await Promise.all(
+              pres.medications.map(async (med) => {
+                try {
+                  const inventoryQuery = await getDocs(collection(db, "inventory"));
+                  const matchingMed = inventoryQuery.docs.find(
+                    doc => doc.data().name.toLowerCase() === med.medication.toLowerCase()
+                  );
+                  
+                  const price = matchingMed ? 
+                    (matchingMed.data().price || 0) : 
+                    0;
+                  
+                  return {
+                    ...med,
+                    unitPrice: price
+                  };
+                } catch (error) {
+                  console.error("Error fetching medication price:", error);
+                  return {
+                    ...med,
+                    unitPrice: 0
+                  };
+                }
+              })
+            );
+
+            return {
+              id: pres.docId,
+              name: pres.name,
+              medications: medicationsWithPrices,
+              pickupDate: pres.pickupDate,
+              pickupTime: pres.pickupTime,
+              prescribedDate: pres.prescribedDate,
+              paid: pres.paid || false,
+              docRef: pres.docRef,
+            };
+          })
+      );
+  
+      setOrders(mappedOrders);
+    };
+
+    if (notifiedPrescriptions.length > 0) {
+      fetchMedicationPrices();
+    }
   }, [notifiedPrescriptions]);
 
   const handleInputChange = (docId, field, value) => {
@@ -232,53 +286,53 @@ const PatientHome = () => {
             )}
           </div>
         )}
+ {activeTab === "payments" && (
+        <div className="payment-container">
+          <h2 className="payment-title">Pay for Your Prescriptions</h2>
+          {orders.length === 0 ? (
+            <p>You have no prescriptions scheduled for pickup yet.</p>
+          ) : (
+            orders.map((order, index) => {
+              if (!Array.isArray(order.medications)) {
+                console.warn(`Skipping order ${order.id}: medications missing`);
+                return null;
+              }
 
-        {activeTab === "payments" && (
-          <div className="payment-container">
-            <h2 className="payment-title">Pay for Your Prescriptions</h2>
-            {orders.length === 0 ? (
-              <p>You have no prescriptions scheduled for pickup yet.</p>
-            ) : (
-              orders.map((order, index) => {
-                if (!Array.isArray(order.medications)) {
-                  console.warn(`Skipping order ${order.id}: medications missing`);
-                  return null;
-                }
+              const total = order.medications.reduce((sum, med) => {
+                return sum + (med.unitPrice || 0) * parseInt(med.quantity);
+              }, 0);
 
-                const total = order.medications.reduce((sum, med) => {
-                  const unitPrice = 200;
-                  return sum + unitPrice * parseInt(med.quantity);
-                }, 0);
-
-                return (
-                  <div key={order.id} className="checkout-box">
-                    <h3>Prescription #{index + 1}</h3>
-                    <p><strong>Patient:</strong> {order.name}</p>
-                    <p><strong>Prescribed On:</strong> {order.prescribedDate}</p>
-                    <p><strong>Pickup:</strong> {order.pickupDate} at {order.pickupTime}</p>
-                    <div style={{ marginTop: '10px' }}>
-                      {order.medications.map((med, i) => (
-                        <div key={i}>
-                          <p><strong>Medication:</strong> {med.medication}</p>
-                          <p><strong>Dosage:</strong> {med.dosage}</p>
-                          <p><strong>Quantity:</strong> {med.quantity}</p>
-                        </div>
-                      ))}
+              return (
+                <div key={order.id} className="checkout-box">
+                  <h3>Prescription #{index + 1}</h3>
+                  <p><strong>Patient:</strong> {order.name}</p>
+                  <p><strong>Prescribed On:</strong> {order.prescribedDate}</p>
+                  <p><strong>Pickup:</strong> {order.pickupDate} at {order.pickupTime}</p>
+                  <div style={{ marginTop: '10px' }}>
+                    {order.medications.map((med, i) => (
+                      <div key={i}>
+                        <p><strong>Medication:</strong> {med.medication}</p>
+                        <p><strong>Dosage:</strong> {med.dosage}</p>
+                        <p><strong>Quantity:</strong> {med.quantity}</p>
+                        <p><strong>Unit Price:</strong> ${(med.unitPrice || 0).toFixed(2)}</p>
+                        <p><strong>Subtotal:</strong> ${((med.unitPrice || 0) * parseInt(med.quantity)).toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p><strong>Total Price:</strong> ${total.toFixed(2)}</p>
+                  {order.paid ? (
+                    <div className="paid-tag" style={{
+                      backgroundColor: "#d4edda",
+                      color: "#155724",
+                      padding: "8px 12px",
+                      borderRadius: "5px",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                      marginTop: "10px"
+                    }}>
+                      ✅ Paid
                     </div>
-                    <p><strong>Total Price:</strong> ${total}</p>
-                    {order.paid ? (
-  <div className="paid-tag" style={{
-    backgroundColor: "#d4edda",
-    color: "#155724",
-    padding: "8px 12px",
-    borderRadius: "5px",
-    fontWeight: "bold",
-    textAlign: "center",
-    marginTop: "10px"
-  }}>
-    ✅ Paid
-  </div>
-) : (<>
+                  ) : (<>
                     <div className="form-group">
                       <label htmlFor={`payment-method-${index}`}>Payment Method:</label>
                       <select id={`payment-method-${index}`} className="payment-select">
@@ -305,43 +359,43 @@ const PatientHome = () => {
                         <input type="text" id={`insurance-carrier-${index}`} placeholder="e.g., Sagicor, Guardian Life" className="insurance-input" />
                       </div>
                     )}
-                    <button className="confirm-button" onClick={async () => {
-  try {
-    const user = auth.currentUser;
-    const email = user?.email;
-console.log(email)
-    const formattedMeds = order.medications.map(m => 
-      `${m.medication} (${m.dosage}) x ${m.quantity}`
-    ).join(", ");
+              <button className="confirm-button" onClick={async () => {
+                      try {
+                        const user = auth.currentUser;
+                        const email = user?.email;
+                        console.log(email)
 
-    const total = order.medications.reduce((sum, med) => {
-      const unitPrice = 200;
-      return sum + unitPrice * parseInt(med.quantity);
-    }, 0);
+                        const formattedMeds = order.medications.map(m => 
+                          `${m.medication} (${m.dosage}) x ${m.quantity} @ $${(m.unitPrice || 0).toFixed(2)} each`
+                        ).join(", ");
 
-    await updateDoc(order.docRef, {
-      paid: true,
-      paidAt: new Date(),
-    });
+                        const total = order.medications.reduce((sum, med) => {
+                          return sum + (med.unitPrice || 0) * parseInt(med.quantity);
+                        }, 0);
 
-    await emailjs.send("service_zqdhd4e", "template_ovx2z1a", {
-      to_email: email,
-      patient_name: order.name,
-      prescribed_date: order.prescribedDate,
-      pickup_date: order.pickupDate,
-      pickup_time: order.pickupTime,
-      medications: formattedMeds,
-      total: `$${total}`,
-    }, "Vcld9wnSGYfR9XGsl");
+                        await updateDoc(order.docRef, {
+                          paid: true,
+                          paidAt: new Date(),
+                        });
 
-    alert("Payment confirmed and receipt sent!");
-  } catch (err) {
-    console.error(err);
-    alert("Payment failed or email not sent.");
-  }
-}}>
-  Checkout
-</button></>)}
+                        await emailjs.send("service_zqdhd4e", "template_ovx2z1a", {
+                          to_email: email,
+                          patient_name: order.name,
+                          prescribed_date: order.prescribedDate,
+                          pickup_date: order.pickupDate,
+                          pickup_time: order.pickupTime,
+                          medications: formattedMeds,
+                          total: `$${total.toFixed(2)}`,
+                        }, "Vcld9wnSGYfR9XGsl");
+
+                        alert("Payment confirmed and receipt sent!");
+                      } catch (err) {
+                        console.error(err);
+                        alert("Payment failed or email not sent.");
+                      }
+                    }}>
+                      Checkout
+                    </button></>)}
                   </div>
                 );
               })
