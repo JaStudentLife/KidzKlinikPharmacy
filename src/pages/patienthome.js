@@ -7,6 +7,8 @@ import "./App.css";
 import PrescriptionForm from "./PrescriptionForm";
 import { useEffect } from "react";
 import emailjs from '@emailjs/browser';
+import Contact from "./Contact";
+
 const PatientHome = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("");
@@ -221,6 +223,12 @@ const PatientHome = () => {
 >
   My Prescriptions
 </button>
+<button
+  onClick={() => setActiveTab("contact")}
+  className={`tab-button ${activeTab === "contact" ? "active" : ""}`}
+>
+  Contact
+</button>
 
      </div>
 
@@ -345,6 +353,7 @@ const PatientHome = () => {
     )}
   </div>
 )}
+{activeTab === "contact" && <Contact />}
 
  {activeTab === "payments" && (
         <div className="payment-container">

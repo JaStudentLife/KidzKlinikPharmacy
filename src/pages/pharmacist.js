@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase"; 
-import { doc, setDoc,getDocs,collection,updateDoc,collectionGroup } from "firebase/firestore";
+import { doc, setDoc,getDocs,getDoc,collection,updateDoc,collectionGroup } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
@@ -9,6 +9,7 @@ import AddMedication from "./addmedication";
 import InventoryDashboard from "./InventoryDashboard";
 import VerifyPrescription from "./VerifyPrescription";
 import emailjs from '@emailjs/browser';
+import Contact from "./Contact";
 
 const Pharmacist = () => {
      const navigate = useNavigate();
@@ -90,6 +91,7 @@ const Pharmacist = () => {
 {/*                  <button onClick={() => setActiveTab("update")} className={`tab-button ${activeTab === "update" ? "active" : ""}`}>Update Order</button>
 */}                  <button onClick={() => setActiveTab("notify")} className={`tab-button ${activeTab === "notify" ? "active" : ""}`}>Notify Patient</button>
                   <button onClick={() => setActiveTab("addMed")} className={`tab-button ${activeTab === "addMed" ? "active" : ""}`}>Manage Mediccine Inventory</button>
+                  
 
         </div>
      
@@ -114,6 +116,8 @@ const Pharmacist = () => {
 {activeTab === "addMed" && (
   <InventoryDashboard/>
 )}
+{activeTab === "contact" && <Contact />}
+
 
      
     </div>
@@ -190,50 +194,88 @@ const PreparePrescription = () => {
 
   const handleFinish = async (patientId, prescriptionId, keysBase) => {
     try {
+      const inventoryRef = collection(db, "inventory");
+      const snapshot = await getDocs(inventoryRef);
+  
+      const inventoryMap = {};
+      snapshot.forEach((doc) => {
+        inventoryMap[doc.id] = { ...doc.data(), docId: doc.id };
+      });
+  
+      const patient = patients.find((p) => p.id === patientId);
+      const prescription = patient.prescriptions.find((p) => p.id === prescriptionId);
+  
+      for (const med of prescription.medications) {
+        const medName = med.medication?.trim().toLowerCase();
+        const medDosage = med.dosage?.trim().toLowerCase();
+  
+        const match = Object.values(inventoryMap).find((inv) =>
+          inv.name?.trim().toLowerCase() === medName &&
+          inv.dosage?.trim().toLowerCase() === medDosage
+        );
+  
+        if (match) {
+          const currentQty = parseInt(match.quantity);
+          const qtyToSubtract = parseInt(med.quantity);
+          const newQty = currentQty - qtyToSubtract;
+  
+          console.log(`✅ Updating ${medName} (${medDosage}) — ${currentQty} ➝ ${Math.max(0, newQty)}`);
+  
+          try {
+            await updateDoc(doc(db, "inventory", match.docId), {
+              quantity: newQty < 0 ? 0 : newQty,
+            });
+          } catch (err) {
+            console.error(`❌ Failed to update inventory for ${medName}:`, err);
+          }
+        } else {
+          console.warn(`⚠️ No inventory match for ${medName} (${medDosage})`);
+        }
+      }
+  
       await updateDoc(
         doc(db, "users", patientId, "prescriptions", prescriptionId),
         { packed: true }
       );
-      alert("Marked as packed!");
-
-      // Update UI to reflect packed status
+      alert("✅ Prescription packaged and inventory updated!");
+  
       setPatients((prev) =>
         prev.map((p) =>
           p.id === patientId
             ? {
                 ...p,
                 prescriptions: p.prescriptions.map((pres) =>
-                  pres.id === prescriptionId
-                    ? { ...pres, packed: true }
-                    : pres
+                  pres.id === prescriptionId ? { ...pres, packed: true } : pres
                 ),
               }
             : p
         )
       );
+  
+      const keysToClear = Object.keys(checkedItems).filter((k) =>
+        k.startsWith(keysBase)
+      );
+      const naKeysToClear = Object.keys(notAvailable).filter((k) =>
+        k.startsWith(keysBase)
+      );
+      setCheckedItems((prev) => {
+        const newState = { ...prev };
+        keysToClear.forEach((k) => delete newState[k]);
+        return newState;
+      });
+      setNotAvailable((prev) => {
+        const newState = { ...prev };
+        naKeysToClear.forEach((k) => delete newState[k]);
+        return newState;
+      });
+  
     } catch (err) {
-      console.error(err);
-      alert("Failed to update prescription.");
+      console.error("❌ Error in packaging process:", err);
+      alert("❌ Failed to package prescription or update inventory.");
     }
-
-    const keysToClear = Object.keys(checkedItems).filter((k) =>
-      k.startsWith(keysBase)
-    );
-    const naKeysToClear = Object.keys(notAvailable).filter((k) =>
-      k.startsWith(keysBase)
-    );
-    setCheckedItems((prev) => {
-      const newState = { ...prev };
-      keysToClear.forEach((k) => delete newState[k]);
-      return newState;
-    });
-    setNotAvailable((prev) => {
-      const newState = { ...prev };
-      naKeysToClear.forEach((k) => delete newState[k]);
-      return newState;
-    });
   };
-
+  
+  
   return (
     <div style={{ padding: 40 }}>
       <h2>📦 Prepare All Prescriptions</h2>
@@ -573,40 +615,45 @@ const UpdateOrder = () => {
 const NotifyPatient = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [sendingId, setSendingId] = useState(null);
-  const [notifiedMap, setNotifiedMap] = useState({}); 
+  const [notifiedMap, setNotifiedMap] = useState({});
 
   useEffect(() => {
     const fetchPackedPrescriptions = async () => {
       const querySnapshot = await getDocs(collectionGroup(db, "prescriptions"));
       const groupedByPatient = {};
 
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      for (const docSnap of querySnapshot.docs) {
+        const data = docSnap.data();
         if (data.packed) {
-          const patientId = doc.ref.parent.parent.id;
+          const patientId = docSnap.ref.parent.parent.id;
+
           if (!groupedByPatient[patientId]) {
+            const userRef = doc(db, "users", patientId);
+            const userDoc = await getDoc(userRef);
+            const userData = userDoc.exists() ? userDoc.data() : {};
+
             groupedByPatient[patientId] = {
               id: patientId,
               name: data.name,
-              email: data.email,
-              prescriptions: []
+              email: userData.email || "",
+              prescriptions: [],
             };
           }
 
-          groupedByPatient[patientId].prescriptions.push({ 
-            ...data, 
-            docId: doc.id,
-            docRef: doc.ref
+          groupedByPatient[patientId].prescriptions.push({
+            ...data,
+            docId: docSnap.id,
+            docRef: docSnap.ref,
           });
         }
-      });
+      }
 
       const packedPatients = Object.values(groupedByPatient);
       setPrescriptions(packedPatients);
 
       const newMap = {};
-      packedPatients.forEach(patient => {
-        patient.prescriptions.forEach(pres => {
+      packedPatients.forEach((patient) => {
+        patient.prescriptions.forEach((pres) => {
           newMap[pres.docId] = pres.notified || false;
         });
       });
@@ -620,88 +667,118 @@ const NotifyPatient = () => {
     if (!patient || !specificPrescription) return;
     setSendingId(specificPrescription.docId);
 
+    const medList = specificPrescription.medications
+      ?.map((med, idx) =>
+        `Medication ${idx + 1}:
+        - Name: ${med.medication}
+        - Dosage: ${med.dosage}
+        - Quantity: ${med.quantity}`
+      )
+      .join("\n\n") || "No medication details provided.";
+
     const templateParams = {
       to_name: patient.name,
       to_email: patient.email,
-      title: "Prescription Ready for pickup",
-      message: `Hi ${patient.name}, your prescription for ${specificPrescription.medications?.[0]?.medication || 'your medication'} is ready for pickup at the pharmacy.`,
+      title: "Prescription Ready for Pickup",
+      message: `Hi ${patient.name},\n\nYour prescription is ready for pickup at the pharmacy. Details:\n\n${medList}\n\nPlease visit us during operating hours to collect your medication.\n\nBest regards,\nThe Kidz Klinik Team`,
     };
 
     try {
       await emailjs.send(
-        'service_zqdhd4e',
-        'template_ovx2z1a',
+        "service_zqdhd4e",
+        "template_ovx2z1a",
         templateParams,
-        'Vcld9wnSGYfR9XGsl'
+        "Vcld9wnSGYfR9XGsl"
       );
 
       if (specificPrescription.docRef) {
-        await updateDoc(specificPrescription.docRef, { 
+        await updateDoc(specificPrescription.docRef, {
           notified: true,
-          notifiedAt: new Date() 
+          notifiedAt: new Date(),
         });
       }
 
-      setNotifiedMap(prev => ({
+      setNotifiedMap((prev) => ({
         ...prev,
-        [specificPrescription.docId]: true
+        [specificPrescription.docId]: true,
       }));
 
-      alert(`Prescription for ${specificPrescription.name} has been notified.`);
+      alert(`✅ Notification sent to ${patient.name}.`);
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to send notification or update prescription.");
+      console.error("EmailJS error:", error);
+      alert("❌ Failed to send notification.");
     }
 
     setSendingId(null);
   };
 
   return (
-    <div style={{ padding: '40px', backgroundColor: '#f5fbff', minHeight: '100vh' }}>
-      <h2 style={{ fontSize: '28px', textAlign: 'center', color: '#0077aa' }}>Notify Patients</h2>
+    <div style={{ padding: "40px", backgroundColor: "#f5fbff", minHeight: "100vh" }}>
+      <h2 style={{ fontSize: "28px", textAlign: "center", color: "#0077aa" }}>
+        Notify Patients
+      </h2>
       {prescriptions.length === 0 ? (
-        <p style={{ textAlign: 'center', color: '#888' }}>No packed prescriptions found.</p>
+        <p style={{ textAlign: "center", color: "#888" }}>
+          No packed prescriptions found.
+        </p>
       ) : (
         prescriptions.map((patient) => (
-          <div key={patient.id} style={{
-            maxWidth: '800px',
-            margin: '30px auto',
-            backgroundColor: '#fff',
-            padding: '30px',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ color: '#006fa1' }}>{patient.name}</h3>
-            <p style={{ marginBottom: '20px' }}>Packed prescriptions:</p>
+          <div
+            key={patient.id}
+            style={{
+              maxWidth: "800px",
+              margin: "30px auto",
+              backgroundColor: "#fff",
+              padding: "30px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h3 style={{ color: "#006fa1" }}>{patient.name}</h3>
+            <p style={{ marginBottom: "20px" }}>Packed prescriptions:</p>
             {patient.prescriptions.map((med, index) => (
-              <div key={index} style={{ 
-                padding: '10px 0', 
-                borderBottom: '1px solid #eee',
-                marginBottom: '10px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: '20px'
-              }}>
+              <div
+                key={index}
+                style={{
+                  padding: "10px 0",
+                  borderBottom: "1px solid #eee",
+                  marginBottom: "10px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "20px",
+                }}
+              >
                 <div style={{ flex: 1 }}>
-                  <p><strong>Prescription Date:</strong> {med.prescribedDate}</p>
-                  {med.medications && med.medications.map((item, i) => (
-                    <div key={i} style={{ marginBottom: '10px' }}>
-                      <p><strong>Medication:</strong> {item.medication}</p>
-                      <p><strong>Dosage:</strong> {item.dosage}</p>
-                      <p><strong>Quantity:</strong> {item.quantity}</p>
-                    </div>
-                  ))}
+                  <p>
+                    <strong>Prescription Date:</strong> {med.prescribedDate}
+                  </p>
+                  {med.medications &&
+                    med.medications.map((item, i) => (
+                      <div key={i} style={{ marginBottom: "10px" }}>
+                        <p>
+                          <strong>Medication:</strong> {item.medication}
+                        </p>
+                        <p>
+                          <strong>Dosage:</strong> {item.dosage}
+                        </p>
+                        <p>
+                          <strong>Quantity:</strong> {item.quantity}
+                        </p>
+                      </div>
+                    ))}
                   {notifiedMap[med.docId] && (
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '5px 10px',
-                      backgroundColor: '#d1f5d3',
-                      color: '#2b7a2b',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      marginTop: '5px'
-                    }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "5px 10px",
+                        backgroundColor: "#d1f5d3",
+                        color: "#2b7a2b",
+                        borderRadius: "8px",
+                        fontWeight: "bold",
+                        marginTop: "5px",
+                      }}
+                    >
                       ✅ Notified
                     </span>
                   )}
@@ -711,13 +788,14 @@ const NotifyPatient = () => {
                     onClick={() => handleNotify(patient, med)}
                     disabled={sendingId === med.docId}
                     style={{
-                      padding: '10px 15px',
-                      backgroundColor: sendingId === med.docId ? '#ccc' : '#0077aa',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '10px',
-                      cursor: sendingId === med.docId ? 'not-allowed' : 'pointer',
-                      minWidth: '100px'
+                      padding: "10px 15px",
+                      backgroundColor: sendingId === med.docId ? "#ccc" : "#0077aa",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "10px",
+                      cursor:
+                        sendingId === med.docId ? "not-allowed" : "pointer",
+                      minWidth: "100px",
                     }}
                   >
                     {sendingId === med.docId ? "Sending..." : "Notify"}

@@ -9,6 +9,8 @@ import Home from "./pages/home";
 import PrescriptionForm from "./pages/PrescriptionForm";
 import Patienthome from "./pages/patienthome";
 import Pharmacist from "./pages/pharmacist";
+import Contact from "./pages/Contact";
+
 function App() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
@@ -55,6 +57,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/prescription" element={<PrescriptionForm />} />
         <Route path = "/pharmacist" element={<Pharmacist/>}/> 
+        <Route path="/contact" element={<Contact />} />
+
       </Routes>
     </Router>
   );
