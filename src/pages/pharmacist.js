@@ -120,267 +120,256 @@ const Pharmacist = () => {
   );
 };
 
-const PreparePrescription = ({ setActiveTab }) => {
-  const [patientId, setPatientId] = useState("");
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState(null);
+const PreparePrescription = () => {
+  const [patients, setPatients] = useState([]);
   const [checkedItems, setCheckedItems] = useState({});
   const [notAvailable, setNotAvailable] = useState({});
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
-  const handleFetchPrescriptions = async () => {
-    setLoading(true);
-    setMessage("");
-    setPrescriptions([]);
-    setSelectedPrescriptionId(null);
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const data = [];
 
-    try {
-      const snapshot = await getDocs(collection(db, "users", patientId, "prescriptions"));
-      if (snapshot.empty) {
-        setMessage("No prescriptions found for this patient.");
-      } else {
-        const results = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setPrescriptions(results);
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        if (userData.role === "patient") {
+          const prescriptionsSnapshot = await getDocs(
+            collection(db, "users", userDoc.id, "prescriptions")
+          );
+          if (!prescriptionsSnapshot.empty) {
+            data.push({
+              id: userDoc.id,
+              email: userData.email,
+              prescriptions: prescriptionsSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })),
+            });
+          }
+        }
       }
-    } catch (error) {
-      console.error("Error fetching prescriptions:", error);
-      setMessage("Failed to fetch prescriptions. Please check the Patient ID.");
-    }
+      setPatients(data);
+      setLoading(false);
+    };
 
-    setLoading(false);
+    fetchAll();
+  }, []);
+
+  const handleCheckboxChange = (key) => {
+    setCheckedItems((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const selectedPrescription = prescriptions.find(p => p.id === selectedPrescriptionId);
-
-  const handleCheckboxChange = (index, field) => {
-    const key = `${index}-${field}`;
-    setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleNotAvailableChange = (index) => {
-    const key = `${index}`;
-    setNotAvailable(prev => ({ ...prev, [key]: !prev[key] }));
-
-    if (!notAvailable[key]) {
-      setCheckedItems(prev => {
-        const newChecked = { ...prev };
-        ["medication", "dosage", "quantity"].forEach(field => {
-          const subKey = `${index}-${field}`;
-          delete newChecked[subKey];
+  const handleNotAvailableChange = (naKey, relatedKeys) => {
+    setNotAvailable((prev) => {
+      const updated = { ...prev, [naKey]: !prev[naKey] };
+      if (!updated[naKey]) {
+        setCheckedItems((prevChecked) => {
+          const updatedChecked = { ...prevChecked };
+          relatedKeys.forEach((key) => delete updatedChecked[key]);
+          return updatedChecked;
         });
-        return newChecked;
-      });
-    }
+      }
+      return updated;
+    });
   };
 
-  const isFinishDisabled = () => {
-    if (!selectedPrescription) return true;
-    return selectedPrescription.medications.some((_, index) => {
-      const naKey = `${index}`;
+  const isFinishDisabled = (prescription, keysBase) => {
+    if (prescription.packed) return true;
+
+    return prescription.medications.some((_, index) => {
+      const naKey = `${keysBase}-${index}`;
       if (notAvailable[naKey]) return false;
 
-      return !["medication", "dosage", "quantity"].every(field =>
-        checkedItems[`${index}-${field}`]
+      return !["medication", "dosage", "quantity"].every((field) =>
+        checkedItems[`${keysBase}-${index}-${field}`]
       );
     });
   };
 
-  return (
-    <div style={{ padding: '40px', backgroundColor: '#f2f6fa', minHeight: '100vh' }}>
-      <h2 style={{ fontSize: '28px', textAlign: 'center', marginBottom: '30px', color: '#0077aa' }}>Prepare Prescription</h2>
+  const handleFinish = async (patientId, prescriptionId, keysBase) => {
+    try {
+      await updateDoc(
+        doc(db, "users", patientId, "prescriptions", prescriptionId),
+        { packed: true }
+      );
+      alert("Marked as packed!");
 
-      <div style={{
-        maxWidth: "600px",
-        margin: "0 auto",
-        background: "#fff",
-        padding: "20px",
-        borderRadius: "12px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-      }}>
-        <label style={{ fontWeight: "bold" }}>Enter Patient ID (UID):</label>
-        <input
-          type="text"
-          value={patientId}
-          onChange={(e) => setPatientId(e.target.value)}
-          placeholder="e.g. zUc12p...x9A"
-          style={{
-            width: "100%",
-            padding: "12px",
-            margin: "10px 0",
-            border: "1px solid #ccc",
-            borderRadius: "6px"
-          }}
-        />
-        <button
-          onClick={handleFetchPrescriptions}
-          disabled={!patientId || loading}
-          style={{
-            padding: "12px",
-            width: "100%",
-            backgroundColor: "#0077aa",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontWeight: "bold"
-          }}
-        >
-          {loading ? "Loading..." : "Get Prescriptions"}
-        </button>
-        {message && <p style={{ color: "red", marginTop: "10px" }}>{message}</p>}
-      </div>
-      {prescriptions.length > 0 && (
-  <div style={{
-    maxWidth: '700px',
-    margin: '30px auto',
-    padding: '20px',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-    borderLeft: '5px solid #0077aa'
-  }}>
-    <h3 style={{
-      fontSize: '20px',
-      marginBottom: '12px',
-      color: '#0077aa'
-    }}>
-      📋 Select a Prescription to Prepare
-    </h3>
-
-    <select
-      value={selectedPrescriptionId || ""}
-      onChange={(e) => setSelectedPrescriptionId(e.target.value)}
-      style={{
-        width: '100%',
-        padding: '14px',
-        fontSize: '16px',
-        borderRadius: '10px',
-        border: '1px solid #ccc',
-        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
-        backgroundColor: '#f9f9f9',
-        color: '#333'
-      }}
-    >
-      <option value="">-- Choose Prescription --</option>
-      {prescriptions.map((p, idx) => (
-        <option key={p.id} value={p.id}>
-          Prescription #{idx + 1} • {p.prescribedDate || "Unknown Date"}
-        </option>
-      ))}
-    </select>
-  </div>
-)}
-
-      {selectedPrescription && (
-        <div style={{
-          maxWidth: "800px",
-          margin: "0 auto",
-          backgroundColor: "#fff",
-          padding: "25px",
-          borderRadius: "15px",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-          marginTop: "20px"
-        }}>
-          <h3 style={{ fontSize: "22px", marginBottom: "10px" }}>{selectedPrescription.name}</h3>
-          <p><strong>DOB:</strong> {selectedPrescription.dob}</p>
-          <p><strong>Signature:</strong> {selectedPrescription.signature}</p>
-
-          {selectedPrescription.medications.map((item, index) => {
-            const naKey = `${index}`;
-            const isNA = notAvailable[naKey];
-
-            return (
-              <div key={index} style={{
-                marginTop: "20px",
-                padding: "20px",
-                background: "#f9fcff",
-                borderRadius: "10px",
-                border: "1px solid #e0e0e0"
-              }}>
-                <p><strong>Medication:</strong> {item.medication}</p>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={checkedItems[`${index}-medication`] || false}
-                    onChange={() => handleCheckboxChange(index, "medication")}
-                    disabled={isNA}
-                    style={{ marginRight: "10px" }}
-                  />
-                  Confirm Medication Retrieved
-                </label>
-
-                <p style={{ marginTop: "10px" }}><strong>Dosage:</strong> {item.dosage}</p>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={checkedItems[`${index}-dosage`] || false}
-                    onChange={() => handleCheckboxChange(index, "dosage")}
-                    disabled={isNA}
-                    style={{ marginRight: "10px" }}
-                  />
-                  Confirm Dosage
-                </label>
-
-                <p style={{ marginTop: "10px" }}><strong>Quantity:</strong> {item.quantity}</p>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={checkedItems[`${index}-quantity`] || false}
-                    onChange={() => handleCheckboxChange(index, "quantity")}
-                    disabled={isNA}
-                    style={{ marginRight: "10px" }}
-                  />
-                  Confirm Quantity Counted
-                </label>
-
-                <div style={{ marginTop: "10px" }}>
-                  <label style={{ color: "#c00" }}>
-                    <input
-                      type="checkbox"
-                      checked={isNA}
-                      onChange={() => handleNotAvailableChange(index)}
-                      style={{ marginRight: "10px" }}
-                    />
-                    Mark as Not Available
-                  </label>
-                </div>
-              </div>
-            );
-          })}
-
-          <button
-            disabled={isFinishDisabled()}
-            onClick={async () => {
-              try {
-                const docRef = doc(db, "users", patientId, "prescriptions", selectedPrescriptionId);
-                await updateDoc(docRef, { packed: true });
-                alert("Prescription prepared and marked as packed!");
-              } catch (err) {
-                console.error("Failed to update prescription status:", err);
-                alert("Error updating prescription status.");
+      // Update UI to reflect packed status
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.id === patientId
+            ? {
+                ...p,
+                prescriptions: p.prescriptions.map((pres) =>
+                  pres.id === prescriptionId
+                    ? { ...pres, packed: true }
+                    : pres
+                ),
               }
-            
-              setSelectedPrescriptionId(null);
-              setCheckedItems({});
-              setNotAvailable({});
-              setActiveTab("home");
-            }}
-            style={{
-              marginTop: '30px',
-              width: '100%',
-              padding: '15px',
-              backgroundColor: isFinishDisabled() ? '#ccc' : '#0082b5',
-              color: 'white',
-              border: 'none',
-              borderRadius: '10px',
-              cursor: isFinishDisabled() ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            Finish Packaging
-          </button>
-        </div>
+            : p
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update prescription.");
+    }
+
+    const keysToClear = Object.keys(checkedItems).filter((k) =>
+      k.startsWith(keysBase)
+    );
+    const naKeysToClear = Object.keys(notAvailable).filter((k) =>
+      k.startsWith(keysBase)
+    );
+    setCheckedItems((prev) => {
+      const newState = { ...prev };
+      keysToClear.forEach((k) => delete newState[k]);
+      return newState;
+    });
+    setNotAvailable((prev) => {
+      const newState = { ...prev };
+      naKeysToClear.forEach((k) => delete newState[k]);
+      return newState;
+    });
+  };
+
+  return (
+    <div style={{ padding: 40 }}>
+      <h2>📦 Prepare All Prescriptions</h2>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        patients.map((patient) => (
+          <div key={patient.id} style={{ marginBottom: 40 }}>
+            <h3>🧍‍♂️ Patient: {patient.email}</h3>
+            {patient.prescriptions.map((prescription, pIdx) => {
+              const keysBase = `${patient.id}-${prescription.id}`;
+
+              return (
+                <div
+                  key={prescription.id}
+                  style={{
+                    padding: 20,
+                    background: "#fff",
+                    borderRadius: 10,
+                    marginTop: 10,
+                    border: prescription.packed ? "2px solid green" : "1px solid #ccc",
+                  }}
+                >
+                  <h4>📑 Prescription #{pIdx + 1}</h4>
+                  {prescription.packed && (
+                    <p style={{ color: "green", fontWeight: "bold" }}>
+                      ✅ Already Packaged
+                    </p>
+                  )}
+                  <p>
+                    <strong>Name:</strong> {prescription.name}
+                  </p>
+                  <p>
+                    <strong>DOB:</strong> {prescription.dob}
+                  </p>
+                  {prescription.medications.map((med, index) => {
+                    const naKey = `${keysBase}-${index}`;
+                    const relatedKeys = ["medication", "dosage", "quantity"].map(
+                      (field) => `${keysBase}-${index}-${field}`
+                    );
+                    const isDisabled = prescription.packed || notAvailable[naKey];
+
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          borderTop: "1px solid #ccc",
+                          paddingTop: 10,
+                          marginTop: 10,
+                        }}
+                      >
+                        <p>
+                          <strong>Medication:</strong> {med.medication}
+                        </p>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={
+                              checkedItems[`${keysBase}-${index}-medication`] || false
+                            }
+                            onChange={() =>
+                              handleCheckboxChange(`${keysBase}-${index}-medication`)
+                            }
+                            disabled={isDisabled}
+                          />{" "}
+                          Confirm Medication Retrieved
+                        </label>
+                        <br />
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={
+                              checkedItems[`${keysBase}-${index}-dosage`] || false
+                            }
+                            onChange={() =>
+                              handleCheckboxChange(`${keysBase}-${index}-dosage`)
+                            }
+                            disabled={isDisabled}
+                          />{" "}
+                          Confirm Dosage
+                        </label>
+                        <br />
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={
+                              checkedItems[`${keysBase}-${index}-quantity`] || false
+                            }
+                            onChange={() =>
+                              handleCheckboxChange(`${keysBase}-${index}-quantity`)
+                            }
+                            disabled={isDisabled}
+                          />{" "}
+                          Confirm Quantity
+                        </label>
+                        <br />
+                        <label style={{ color: "red" }}>
+                          <input
+                            type="checkbox"
+                            checked={notAvailable[naKey] || false}
+                            onChange={() =>
+                              handleNotAvailableChange(naKey, relatedKeys)
+                            }
+                            disabled={prescription.packed}
+                          />{" "}
+                          Mark as Not Available
+                        </label>
+                      </div>
+                    );
+                  })}
+                  <button
+                    disabled={isFinishDisabled(prescription, keysBase)}
+                    onClick={() =>
+                      handleFinish(patient.id, prescription.id, keysBase)
+                    }
+                    style={{
+                      marginTop: 20,
+                      padding: 10,
+                      backgroundColor: isFinishDisabled(prescription, keysBase)
+                        ? "#ccc"
+                        : "#0077aa",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 8,
+                      cursor: isFinishDisabled(prescription, keysBase)
+                        ? "not-allowed"
+                        : "pointer",
+                    }}
+                  >
+                    {prescription.packed ? "Already Packaged" : "Finish Packaging"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ))
       )}
     </div>
   );
@@ -629,7 +618,7 @@ const NotifyPatient = () => {
 
   const handleNotify = async (patient, specificPrescription) => {
     if (!patient || !specificPrescription) return;
-    setSendingId(patient.id);
+    setSendingId(specificPrescription.docId);
 
     const templateParams = {
       to_name: patient.name,
@@ -691,9 +680,10 @@ const NotifyPatient = () => {
                 marginBottom: '10px',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'flex-start',
+                gap: '20px'
               }}>
-                <div>
+                <div style={{ flex: 1 }}>
                   <p><strong>Prescription Date:</strong> {med.prescribedDate}</p>
                   {med.medications && med.medications.map((item, i) => (
                     <div key={i} style={{ marginBottom: '10px' }}>
@@ -712,24 +702,25 @@ const NotifyPatient = () => {
                       fontWeight: 'bold',
                       marginTop: '5px'
                     }}>
-                      Notified
+                      ✅ Notified
                     </span>
                   )}
                 </div>
                 {!notifiedMap[med.docId] && (
                   <button
                     onClick={() => handleNotify(patient, med)}
-                    disabled={sendingId === patient.id}
+                    disabled={sendingId === med.docId}
                     style={{
                       padding: '10px 15px',
-                      backgroundColor: sendingId === patient.id ? '#ccc' : '#0077aa',
+                      backgroundColor: sendingId === med.docId ? '#ccc' : '#0077aa',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '10px',
-                      cursor: sendingId === patient.id ? 'not-allowed' : 'pointer'
+                      cursor: sendingId === med.docId ? 'not-allowed' : 'pointer',
+                      minWidth: '100px'
                     }}
                   >
-                    {sendingId === patient.id ? "Sending..." : "Notify"}
+                    {sendingId === med.docId ? "Sending..." : "Notify"}
                   </button>
                 )}
               </div>
@@ -740,6 +731,7 @@ const NotifyPatient = () => {
     </div>
   );
 };
+
 
 const NotifyPharmacist = () => {
 

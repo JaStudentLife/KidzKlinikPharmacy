@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
-import "./App.css";
 import emailjs from '@emailjs/browser';
+import "./App.css";
+
 const PrescriptionForm = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -73,19 +73,18 @@ const PrescriptionForm = () => {
     setMedicationErrors(updatedErrors);
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ text: "", type: "" });
-  
+
     const hasErrors = medicationErrors.some((error) => error !== "");
     if (hasErrors) {
       setMessage({ text: "Please resolve all medication issues before submitting.", type: "error" });
       setLoading(false);
       return;
     }
-  
+
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -93,35 +92,31 @@ const PrescriptionForm = () => {
         setLoading(false);
         return;
       }
-  
+
       const prescriptionRef = doc(db, "users", user.uid, "prescriptions", Date.now().toString());
       await setDoc(prescriptionRef, formData);
-  
+
       const usersSnapshot = await getDocs(collection(db, "users"));
       const pharmacistEmails = usersSnapshot.docs
         .map(doc => doc.data())
         .filter(user => user.role === "pharmacist")
         .map(user => user.email);
-  
-      const medDetails = formData.medications
-        .map(m => `${m.medication} (${m.dosage}) x${m.quantity}`)
-        .join(", ");
-  
-        await Promise.all(pharmacistEmails.map(email =>
-          emailjs.send("service_zqdhd4e", "template_ovx2z1a", {
-            title: "🧾 New Prescription Alert - The Kidz Klinik",
-            message: `A new prescription has been submitted for review. Please log in to your dashboard to prepare the order.`,
-            to_email: email,
-          }, "Vcld9wnSGYfR9XGsl")
-        ));
-  
+
+      for (const email of pharmacistEmails) {
+        await emailjs.send("service_zqdhd4e", "template_ovx2z1a", {
+          title: "🧾 New Prescription Alert - The Kidz Klinik",
+          message: `A new prescription has been submitted for review. Please log in to your dashboard to prepare the order.`,
+          to_email: email,
+        }, "Vcld9wnSGYfR9XGsl");
+      }
+
       setMessage({ text: "Prescription saved successfully!", type: "success" });
       setSubmitted(true);
     } catch (error) {
       console.error("Error saving prescription:", error);
       setMessage({ text: "Error saving prescription. Please try again.", type: "error" });
     }
-  
+
     setLoading(false);
   };
 

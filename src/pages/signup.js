@@ -9,13 +9,30 @@ import "./App.css";
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); 
   const [role, setRole] = useState("patient");
-  const [message, setMessage] = useState({ text: "", type: "" }); // For success/error messages
+  const [message, setMessage] = useState({ text: "", type: "" });
   const navigate = useNavigate();
+
+  const validatePassword = (pwd) => {
+    const hasNumber = /\d/;
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/;
+    return hasNumber.test(pwd) && hasSymbol.test(pwd);
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setMessage({ text: "", type: "" }); 
+    setMessage({ text: "", type: "" });
+
+    if (password !== confirmPassword) {
+      setMessage({ text: "Passwords do not match.", type: "error" });
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setMessage({ text: "Password must contain at least one number and one symbol.", type: "error" });
+      return;
+    }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -71,7 +88,8 @@ const Signup = () => {
           <label>Password:</label>
           <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required className="form-input" />
 
-          
+          <label>Re-enter Password:</label>
+          <input type="password" placeholder="Re-enter your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="form-input" />
 
           <button type="submit" className="signup-button">SIGN UP</button>
 

@@ -16,7 +16,31 @@ const PatientHome = () => {
   const [orders, setOrders] = useState([]); 
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [allPrescriptions, setAllPrescriptions] = useState([]);
 
+  useEffect(() => {
+    const fetchAllPrescriptions = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+  
+      const userDocRef = doc(db, "users", user.uid);
+      const prescriptionsRef = collection(userDocRef, "prescriptions");
+      const querySnapshot = await getDocs(prescriptionsRef);
+  
+      const all = [];
+      querySnapshot.forEach(docSnap => {
+        all.push({
+          ...docSnap.data(),
+          docId: docSnap.id
+        });
+      });
+  
+      setAllPrescriptions(all);
+    };
+  
+    fetchAllPrescriptions();
+  }, []);
+  
   useEffect(() => {
     const fetchNotifiedPrescriptions = async () => {
       const user = auth.currentUser;
@@ -74,7 +98,6 @@ const PatientHome = () => {
         notifiedPrescriptions
           .filter(pres => pres.pickupDate && pres.pickupTime)
           .map(async pres => {
-            // Fetch prices for each medication in the prescription
             const medicationsWithPrices = await Promise.all(
               pres.medications.map(async (med) => {
                 try {
@@ -192,7 +215,14 @@ const PatientHome = () => {
         <button onClick={() => setActiveTab("payment")} className={`tab-button ${activeTab === "payment" ? "active" : ""}`}>Select Payment Method</button>
         <button onClick={() => setActiveTab("pickup")} className={`tab-button ${activeTab === "pickup" ? "active" : ""}`}>Pickup Order</button>
         <button onClick={() => setActiveTab("payments")} className={`tab-button ${activeTab === "payments" ? "active" : ""}`}>Pay for an Order</button>
-      </div>
+        <button 
+  onClick={() => setActiveTab("history")} 
+  className={`tab-button ${activeTab === "history" ? "active" : ""}`}
+>
+  My Prescriptions
+</button>
+
+     </div>
 
       <div>
         {activeTab === "upload" && (
@@ -286,6 +316,36 @@ const PatientHome = () => {
             )}
           </div>
         )}
+        {activeTab === "history" && (
+  <div className="history-container">
+    <h2 className="history-title">My Prescriptions</h2>
+    {allPrescriptions.length === 0 ? (
+      <p>You have not submitted any prescriptions yet.</p>
+    ) : (
+      allPrescriptions.map((pres, index) => (
+        <div key={pres.docId} className="prescription-card">
+          <h3>Prescription #{index + 1}</h3>
+          <p><strong>Name:</strong> {pres.name}</p>
+          <p><strong>Date of Birth:</strong> {pres.dob}</p>
+          <p><strong>Prescribed Date:</strong> {pres.prescribedDate}</p>
+          <p><strong>Pickup Date:</strong> {pres.pickupDate || "Not set"}</p>
+          <p><strong>Pickup Time:</strong> {pres.pickupTime || "Not set"}</p>
+          <p><strong>Paid:</strong> {pres.paid ? "✅ Yes" : "❌ No"}</p>
+          <div>
+            {pres.medications?.map((med, i) => (
+              <div key={i} style={{ marginLeft: "15px" }}>
+                <p><strong>Medication:</strong> {med.medication}</p>
+                <p><strong>Dosage:</strong> {med.dosage}</p>
+                <p><strong>Quantity:</strong> {med.quantity}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+)}
+
  {activeTab === "payments" && (
         <div className="payment-container">
           <h2 className="payment-title">Pay for Your Prescriptions</h2>
