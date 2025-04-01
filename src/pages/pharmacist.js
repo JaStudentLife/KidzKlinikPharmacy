@@ -90,7 +90,7 @@ const Pharmacist = () => {
                   <button onClick={() => setActiveTab("prepare")} className={`tab-button ${activeTab === "prepare" ? "active" : ""}`}>Prepare Order</button>
 {/*                  <button onClick={() => setActiveTab("update")} className={`tab-button ${activeTab === "update" ? "active" : ""}`}>Update Order</button>
 */}                  <button onClick={() => setActiveTab("notify")} className={`tab-button ${activeTab === "notify" ? "active" : ""}`}>Notify Patient</button>
-                  <button onClick={() => setActiveTab("addMed")} className={`tab-button ${activeTab === "addMed" ? "active" : ""}`}>Manage Mediccine Inventory</button>
+                  <button onClick={() => setActiveTab("addMed")} className={`tab-button ${activeTab === "addMed" ? "active" : ""}`}>Manage Medicine Inventory</button>
                   
 
         </div>

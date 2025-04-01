@@ -5,6 +5,8 @@ import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -13,7 +15,8 @@ const Signup = () => {
   const [role, setRole] = useState("patient");
   const [message, setMessage] = useState({ text: "", type: "" });
   const navigate = useNavigate();
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const validatePassword = (pwd) => {
     const hasNumber = /\d/;
     const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/;
@@ -86,10 +89,57 @@ const Signup = () => {
           <input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required className="form-input" />
 
           <label>Password:</label>
-          <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required className="form-input" />
+<div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+  <input
+    type={showPassword ? "text" : "password"}
+    placeholder="Enter your password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    required
+    className="form-input"
+    style={{ width: "100%", paddingRight: "40px" }}
+  />
+  <FontAwesomeIcon
+    icon={showPassword ? faEyeSlash : faEye}
+    onClick={() => setShowPassword(!showPassword)}
+    style={{
+      position: "absolute",
+      right: "10px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      cursor: "pointer",
+      color: "#666",
+      zIndex: 2
+    }}
+  />
+</div>
 
-          <label>Re-enter Password:</label>
-          <input type="password" placeholder="Re-enter your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="form-input" />
+
+<label>Re-enter Password:</label>
+<div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+  <input
+    type={showConfirmPassword ? "text" : "password"}
+    placeholder="Re-enter your password"
+    value={confirmPassword}
+    onChange={(e) => setConfirmPassword(e.target.value)}
+    required
+    className="form-input"
+    style={{ width: "100%", paddingRight: "40px" }}
+  />
+  <FontAwesomeIcon
+    icon={showConfirmPassword ? faEyeSlash : faEye}
+    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+    style={{
+      position: "absolute",
+      right: "10px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      cursor: "pointer",
+      color: "#666",
+      zIndex: 2
+    }}
+  />
+</div>
 
           <button type="submit" className="signup-button">SIGN UP</button>
 

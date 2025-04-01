@@ -4,6 +4,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -11,7 +13,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  const [showPassword, setShowPassword] = useState(false);
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -61,7 +63,35 @@ const Login = () => {
           <input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required className="form-input" />
 
           <label>Password:</label>
-          <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required className="form-input" />
+<div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+  <input
+    type={showPassword ? "text" : "password"}
+    placeholder="Enter your password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    required
+    className="form-input"
+    style={{
+      width: "100%",
+      paddingRight: "40px", // space for the eye icon
+    }}
+  />
+  <FontAwesomeIcon
+    icon={showPassword ? faEyeSlash : faEye}
+    onClick={() => setShowPassword(!showPassword)}
+    style={{
+      position: "absolute",
+      right: "10px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      cursor: "pointer",
+      color: "#666",
+      zIndex: 2,
+    }}
+  />
+</div>
+
+
 
           {error && <p className="error-message">{error}</p>}
 

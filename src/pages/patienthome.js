@@ -19,7 +19,7 @@ const PatientHome = () => {
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [allPrescriptions, setAllPrescriptions] = useState([]);
-
+const [preferredPaymentMethod,setPreferredPaymentMethod] = useState("");
   useEffect(() => {
     const fetchAllPrescriptions = async () => {
       const user = auth.currentUser;
@@ -76,7 +76,25 @@ const PatientHome = () => {
       setActiveTab(savedTab);
     }
   }, []);
+const handleSavePaymentMethod = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    alert("You must be logged in to save your payment method.");
+    return;
+  }
 
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+    await updateDoc(userDocRef, {
+      preferredPaymentMethod: preferredPaymentMethod,
+    });
+
+    alert("Preferred payment method saved successfully!");
+  } catch (error) {
+    console.error("Error saving payment method:", error);
+    alert("Failed to save payment method.");
+  }
+};
   useEffect(() => {
     const mapped = notifiedPrescriptions
       .filter(pres => pres.pickupDate && pres.pickupTime)
@@ -268,6 +286,9 @@ const PatientHome = () => {
                 <input type="text" id="insurance-carrier" placeholder="e.g., Sagicor, Guardian Life" className="insurance-input" />
               </div>
             )}
+   <button className="confirm-button" onClick={handleSavePaymentMethod}>
+      Save Preferred Payment Method
+    </button>
           </div>
         )}
 
@@ -457,7 +478,7 @@ const PatientHome = () => {
                           total: `$${total.toFixed(2)}`,
                         }, "Vcld9wnSGYfR9XGsl");
 
-                        alert("Payment confirmed and receipt sent!");
+                        alert("Payment confirmed and receipt sent. You will pay in person.");
                       } catch (err) {
                         console.error(err);
                         alert("Payment failed or email not sent.");
