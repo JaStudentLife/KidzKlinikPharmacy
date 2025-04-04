@@ -1,26 +1,53 @@
-import React from "react";
+import React, { useRef } from "react";
+import emailjs from "@emailjs/browser";
 import "./App.css";
 
 function Contact() {
+  const form = useRef();
+
+  const sendEmail = (e) => {
+    e.preventDefault();
+    
+    emailjs.sendForm(
+    "service_zqdhd4e",
+    "template_ovx2z1a",
+      form.current,
+       "Vcld9wnSGYfR9XGsl"
+    ).then(
+      (result) => {
+        console.log(result.text);
+        alert("Message sent successfully!");
+        form.current.reset();
+      },
+      (error) => {
+        console.log(error.text);
+        alert("Failed to send message. Please try again.");
+      }
+    );
+  };
+
   return (
     <div className="container">
       <h2>Contact Kidz Klinik</h2>
       <p><strong>Address:</strong> El Shaddai Medical Centre, 94¼ Old Hope Road, Kingston 6</p>
       <p><strong>Phone:</strong> (876) 555-1234</p>
-      <p><strong>Email:</strong> contact@kidzklinik.com</p>
+      <p><strong>Email:</strong> contactkidzklink@gmail.com</p>
 
-      <form action="#" method="POST">
-        <label htmlFor="name">Full Name:</label>
-        <input type="text" id="name" name="name" required />
+      <form ref={form} onSubmit={sendEmail}>
+  <input type="hidden" name="to_email" value="contactkidzklink@gmail.com" />
 
-        <label htmlFor="email">Email:</label>
-        <input type="email" id="email" name="email" required />
+  <label htmlFor="name">Full Name:</label>
+  <input type="text" id="name" name="user_name" required />
 
-        <label htmlFor="message">Message:</label>
-        <textarea id="message" name="message" rows="5" required></textarea>
+  <label htmlFor="email">Email:</label>
+  <input type="email" id="email" name="user_email" required />
 
-        <button type="submit">Send Message</button>
-      </form>
+  <label htmlFor="message">Message:</label>
+  <textarea id="message" name="message" rows="5" required></textarea>
+
+  <button type="submit">Send Message</button>
+</form>
+
 
       <div className="about">
         <p>

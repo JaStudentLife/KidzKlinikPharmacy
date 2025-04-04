@@ -232,9 +232,9 @@ const handleSavePaymentMethod = async () => {
         padding: "10px"
       }}>
         <button onClick={() => setActiveTab("upload")} className={`tab-button ${activeTab === "upload" ? "active" : ""}`}>Upload Prescription</button>
-        <button onClick={() => setActiveTab("payment")} className={`tab-button ${activeTab === "payment" ? "active" : ""}`}>Select Payment Method</button>
-        <button onClick={() => setActiveTab("pickup")} className={`tab-button ${activeTab === "pickup" ? "active" : ""}`}>Pickup Order</button>
-        <button onClick={() => setActiveTab("payments")} className={`tab-button ${activeTab === "payments" ? "active" : ""}`}>Pay for an Order</button>
+{/*        <button onClick={() => setActiveTab("payment")} className={`tab-button ${activeTab === "payment" ? "active" : ""}`}>Select Payment Method</button>
+*/}        <button onClick={() => setActiveTab("pickup")} className={`tab-button ${activeTab === "pickup" ? "active" : ""}`}>Pickup Order</button>
+        <button onClick={() => setActiveTab("payments")} className={`tab-button ${activeTab === "payments" ? "active" : ""}`}>Set Payment Method for an Order</button>
         <button 
   onClick={() => setActiveTab("history")} 
   className={`tab-button ${activeTab === "history" ? "active" : ""}`}
@@ -266,7 +266,6 @@ const handleSavePaymentMethod = async () => {
                 <option value="">-- Choose an option --</option>
                 <option value="cash">Cash</option>
                 <option value="card">Card</option>
-                <option value="insurance">Insurance</option>
               </select>
             </div>
             <div className="form-group">
@@ -359,7 +358,7 @@ const handleSavePaymentMethod = async () => {
           <p><strong>Prescribed Date:</strong> {pres.prescribedDate}</p>
           <p><strong>Pickup Date:</strong> {pres.pickupDate || "Not set"}</p>
           <p><strong>Pickup Time:</strong> {pres.pickupTime || "Not set"}</p>
-          <p><strong>Paid:</strong> {pres.paid ? "✅ Yes" : "❌ No"}</p>
+          <p><strong>Payment Method Set:</strong> {pres.paid ? "Yes" : "No"}</p>
           <div>
             {pres.medications?.map((med, i) => (
               <div key={i} style={{ marginLeft: "15px" }}>
@@ -420,7 +419,7 @@ const handleSavePaymentMethod = async () => {
                       textAlign: "center",
                       marginTop: "10px"
                     }}>
-                      ✅ Paid
+                      To Be Paid
                     </div>
                   ) : (<>
                     <div className="form-group">
@@ -468,7 +467,7 @@ const handleSavePaymentMethod = async () => {
                           paidAt: new Date(),
                         });
 
-                        await emailjs.send("service_zqdhd4e", "template_ovx2z1a", {
+                        await emailjs.send("service_zqdhd4e", "template_dc5833f", {
                           to_email: email,
                           patient_name: order.name,
                           prescribed_date: order.prescribedDate,
@@ -478,13 +477,13 @@ const handleSavePaymentMethod = async () => {
                           total: `$${total.toFixed(2)}`,
                         }, "Vcld9wnSGYfR9XGsl");
 
-                        alert("Payment confirmed and receipt sent. You will pay in person.");
+                        alert("Payment option confirmed and invoice sent. You will pay in person.");
                       } catch (err) {
                         console.error(err);
                         alert("Payment failed or email not sent.");
                       }
                     }}>
-                      Checkout
+                      Save
                     </button></>)}
                   </div>
                 );

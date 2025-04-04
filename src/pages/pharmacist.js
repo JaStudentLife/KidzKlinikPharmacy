@@ -86,7 +86,7 @@ const Pharmacist = () => {
       }}>
 
         <button onClick={() => setActiveTab("home")} className={`tab-button ${activeTab === "home" ? "active" : ""}`}>Home</button>
-                  <button onClick={() => setActiveTab("verify")} className={`tab-button ${activeTab === "verify" ? "active" : ""}`}>Verify Prescription</button>
+                  <button onClick={() => setActiveTab("verify")} className={`tab-button ${activeTab === "verify" ? "active" : ""}`}>View Prescription</button>
                   <button onClick={() => setActiveTab("prepare")} className={`tab-button ${activeTab === "prepare" ? "active" : ""}`}>Prepare Order</button>
 {/*                  <button onClick={() => setActiveTab("update")} className={`tab-button ${activeTab === "update" ? "active" : ""}`}>Update Order</button>
 */}                  <button onClick={() => setActiveTab("notify")} className={`tab-button ${activeTab === "notify" ? "active" : ""}`}>Notify Patient</button>
