@@ -106,12 +106,16 @@ const handleSavePaymentMethod = async () => {
         pickupTime: pres.pickupTime,
         prescribedDate: pres.prescribedDate,
         paid: pres.paid || false,
+    paidPharmacist: pres.paidPharmacist || false,
+
         docRef: pres.docRef,
       }));
      
     setOrders(mapped);
   }, [notifiedPrescriptions]);
- 
+ useEffect(()=>{
+console.log(orders)
+ },[orders])
   useEffect(() => {
     const fetchMedicationPrices = async () => {
       const mappedOrders = await Promise.all(
@@ -152,6 +156,7 @@ const handleSavePaymentMethod = async () => {
               pickupTime: pres.pickupTime,
               prescribedDate: pres.prescribedDate,
               paid: pres.paid || false,
+    paidPharmacist: pres.paidPharmacist || false,
               docRef: pres.docRef,
             };
           })
@@ -409,19 +414,32 @@ const handleSavePaymentMethod = async () => {
                     ))}
                   </div>
                   <p><strong>Total Price:</strong> ${total.toFixed(2)}</p>
-                  {order.paid ? (
-                    <div className="paid-tag" style={{
-                      backgroundColor: "#d4edda",
-                      color: "#155724",
-                      padding: "8px 12px",
-                      borderRadius: "5px",
-                      fontWeight: "bold",
-                      textAlign: "center",
-                      marginTop: "10px"
-                    }}>
-                      To Be Paid
-                    </div>
-                  ) : (<>
+                  {order.paidPharmacist ? (
+  <div className="paid-tag" style={{
+    backgroundColor: "#d4edda",
+    color: "#155724",
+    padding: "8px 12px",
+    borderRadius: "5px",
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: "10px"
+  }}>
+     Paid
+  </div>
+) : order.paid ? (
+  <div className="paid-tag" style={{
+    backgroundColor: "#fff3cd",
+    color: "#856404",
+    padding: "8px 12px",
+    borderRadius: "5px",
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: "10px"
+  }}>
+  To Be Paid at Pharmacy
+  </div>
+) : (
+<>
                     <div className="form-group">
                       <label htmlFor={`payment-method-${index}`}>Payment Method:</label>
                       <select id={`payment-method-${index}`} className="payment-select">

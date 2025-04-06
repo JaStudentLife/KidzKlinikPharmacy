@@ -58,6 +58,9 @@ const Pharmacist = () => {
       console.error("Error signing out:", error);
     }
   };
+
+
+
   return (
     <div className="pharmacist-container">
       <div className="pharmacist-menu">
@@ -91,7 +94,13 @@ const Pharmacist = () => {
 {/*                  <button onClick={() => setActiveTab("update")} className={`tab-button ${activeTab === "update" ? "active" : ""}`}>Update Order</button>
 */}                  <button onClick={() => setActiveTab("notify")} className={`tab-button ${activeTab === "notify" ? "active" : ""}`}>Notify Patient</button>
                   <button onClick={() => setActiveTab("addMed")} className={`tab-button ${activeTab === "addMed" ? "active" : ""}`}>Manage Medicine Inventory</button>
-                  
+                  <button
+  onClick={() => setActiveTab("markPaid")}
+  className={`tab-button ${activeTab === "markPaid" ? "active" : ""}`}
+>
+  Mark Paid Prescriptions
+</button>
+
 
         </div>
      
@@ -118,6 +127,7 @@ const Pharmacist = () => {
 )}
 {activeTab === "contact" && <Contact />}
 
+{activeTab === "markPaid" && <MarkPaidPrescriptions />}
 
      
     </div>
@@ -816,3 +826,125 @@ const NotifyPharmacist = () => {
 }
 
 export default Pharmacist;
+
+const MarkPaidPrescriptions = () => {
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState({});
+
+  useEffect(() => {
+    const fetchPrescriptions = async () => {
+      setLoading(true);
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const results = [];
+
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        if (userData.role === "patient") {
+          const prescriptionsSnapshot = await getDocs(
+            collection(db, "users", userDoc.id, "prescriptions")
+          );
+          const filtered = prescriptionsSnapshot.docs
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
+            .filter((prescription) => prescription.packed && !prescription.paidPharmacist);
+
+          if (filtered.length > 0) {
+            results.push({
+              id: userDoc.id,
+              email: userData.email || "",
+              prescriptions: filtered,
+            });
+          }
+        }
+      }
+
+      setPatients(results);
+      setLoading(false);
+    };
+
+    fetchPrescriptions();
+  }, []);
+
+  const markAsPaid = async (patientId, prescriptionId) => {
+    const key = `${patientId}-${prescriptionId}`;
+    setMarkingPaid((prev) => ({ ...prev, [key]: true }));
+
+    try {
+      await updateDoc(doc(db, "users", patientId, "prescriptions", prescriptionId), {
+        paidPharmacist: true,
+      });
+
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.id === patientId
+            ? {
+                ...p,
+                prescriptions: p.prescriptions.filter((pres) => pres.id !== prescriptionId),
+              }
+            : p
+        )
+      );
+
+      alert("✅ Marked as paid!");
+    } catch (err) {
+      console.error("❌ Error updating paidPharmacist:", err);
+      alert("❌ Failed to mark as paid.");
+    } finally {
+      setMarkingPaid((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  return (
+    <div style={{ padding: 40 }}>
+      <h2>💳 Mark Paid Prescriptions</h2>
+      {loading ? (
+        <p>Loading prescriptions...</p>
+      ) : patients.length === 0 ? (
+        <p>No prescriptions ready to mark as paid.</p>
+      ) : (
+        patients.map((patient) => (
+          <div key={patient.id} style={{ marginBottom: 30 }}>
+            <h3>Patient: {patient.email}</h3>
+            {patient.prescriptions.map((prescription, idx) => (
+              <div
+                key={prescription.id}
+                style={{
+                  background: "#f0f9ff",
+                  padding: 20,
+                  borderRadius: 10,
+                  marginBottom: 10,
+                }}
+              >
+                <p><strong>Name:</strong> {prescription.name}</p>
+                <p><strong>DOB:</strong> {prescription.dob}</p>
+                <p><strong>Prescribed Date:</strong> {prescription.prescribedDate || "N/A"}</p>
+                {prescription.medications.map((med, i) => (
+                  <div key={i} style={{ marginLeft: 20 }}>
+                    <p>• <strong>{med.medication}</strong> - {med.dosage} ({med.quantity})</p>
+                  </div>
+                ))}
+                <button
+                  onClick={() => markAsPaid(patient.id, prescription.id)}
+                  disabled={markingPaid[`${patient.id}-${prescription.id}`]}
+                  style={{
+                    marginTop: 10,
+                    backgroundColor: "#28a745",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "10px 15px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {markingPaid[`${patient.id}-${prescription.id}`]
+                    ? "Marking..."
+                    : "Mark as Paid"}
+                </button>
+              </div>
+            ))}
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
