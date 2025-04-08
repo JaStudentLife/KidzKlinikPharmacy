@@ -258,7 +258,7 @@ const InventoryDashboard = () => {
             fontSize: "18px",
             fontWeight: "500"
           }}>
-            📦 No medications in inventory. Click <strong>"+ Add Medication"</strong> to get started.
+            No medications in inventory. Click <strong>"+ Add Medication"</strong> to get started.
           </div>
         ) : (
           <table className="inventory-table">

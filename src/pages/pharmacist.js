@@ -4,8 +4,6 @@ import { doc, setDoc,getDocs,getDoc,collection,updateDoc,collectionGroup } from 
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
-import PrescriptionForm from "./PrescriptionForm";
-import AddMedication from "./addmedication";
 import InventoryDashboard from "./InventoryDashboard";
 import VerifyPrescription from "./VerifyPrescription";
 import emailjs from '@emailjs/browser';
