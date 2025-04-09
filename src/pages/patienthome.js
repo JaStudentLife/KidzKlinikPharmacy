@@ -20,6 +20,7 @@ const PatientHome = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [allPrescriptions, setAllPrescriptions] = useState([]);
 const [preferredPaymentMethod,setPreferredPaymentMethod] = useState("");
+
   useEffect(() => {
     const fetchAllPrescriptions = async () => {
       const user = auth.currentUser;
@@ -340,9 +341,11 @@ console.log(orders)
                         onChange={(e) => handleInputChange(docId, "pickupTime", e.target.value)}
                       />
                     </div>
+                    <div style={{justifyContent:"center",display:"flex"}}>
                     <button className="confirm-button" onClick={() => handleConfirmPickup(docId, prescription.docRef)}>
                       {hasPickup ? "Change Pickup" : "Confirm Pickup"}
                     </button>
+                    </div>
                   </div>
                 );
               })
@@ -372,7 +375,9 @@ console.log(orders)
                 <p><strong>Quantity:</strong> {med.quantity}</p>
               </div>
             ))}
-          </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"center"}}>
+              <button style={{color:"white"}} onClick={{}}>Refill Prescription</button></div>
         </div>
       ))
     )}

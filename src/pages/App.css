@@ -768,15 +768,6 @@
   font-weight: bold;
 }
 
-.payment-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 30px 20px;
-  background-color: #f7fcfe;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
-}
 
 .payment-title {
   font-size: 28px;
@@ -827,14 +818,7 @@
   border-radius: 8px;
 }
 
-.payment-container {
-  background-color: #f4faff;
-  padding: 20px;
-  border-radius: 8px;
-  max-width: 500px;
-  margin: 0 auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+
 
 .payment-container h2 {
   margin-bottom: 15px;
@@ -883,13 +867,21 @@
 
 .pickup-container {
   width: 100%;
-  max-width: 600px;
-  margin: 30px auto;
+ 
+}
+.pickup-card{
+  margin: 30px 30px;
   padding: 30px 20px;
-  background-color: #f7fcfe;
+  background-color: #7dc8e6;
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  text-align: center;
+}
+.pickup-container input{
+  width: 50%;
+}
+.pickup-container button{
+  width: 200px;
+  border-radius: 16px;
 }
 
 .pickup-title {
@@ -940,6 +932,9 @@
 
 .checkout-box {
   margin-top: 20px;
+  margin-left: 30px;
+  margin-right: 30px;
+
   background: #f4faff;
   padding: 20px;
   border-radius: 10px;
